@@ -480,7 +480,7 @@
 
     .bottom-inner {
       display: grid;
-      grid-template-columns: 1fr auto auto;
+      grid-template-columns: 1fr auto auto auto;
       gap: 9px;
       align-items: center;
       width: min(100%, 760px);
@@ -534,6 +534,12 @@
 
     .primary-action.saved {
       filter: saturate(1.2) brightness(1.07);
+    }
+
+    .zero-btn {
+      color: var(--coral);
+      font-size: 1rem;
+      font-weight: 950;
     }
 
     .icon {
@@ -743,7 +749,8 @@
         <span>Total ahora</span>
         <strong id="bottomTotal">0 raciones</strong>
       </div>
-      <button class="icon-btn" type="button" id="resetBtn" title="Reiniciar raciones" aria-label="Reiniciar raciones">
+      <button class="icon-btn zero-btn" type="button" id="zeroBtn" title="Encerar raciones" aria-label="Encerar raciones">0</button>
+      <button class="icon-btn" type="button" id="resetBtn" title="Restaurar raciones base" aria-label="Restaurar raciones base">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M3 12a9 9 0 1 0 3-6.7"></path>
           <path d="M3 4v6h6"></path>
@@ -793,6 +800,7 @@
       bottomTotal: document.querySelector("#bottomTotal"),
       foodChoices: document.querySelector("#foodChoices"),
       historyList: document.querySelector("#historyList"),
+      zeroBtn: document.querySelector("#zeroBtn"),
       resetBtn: document.querySelector("#resetBtn"),
       saveBtn: document.querySelector("#saveBtn"),
       clearHistory: document.querySelector("#clearHistory"),
@@ -1036,6 +1044,15 @@
       render();
     }
 
+    function zeroRations() {
+      state = state.map((fish) => ({
+        name: fish.name,
+        amount: 0
+      }));
+      saveState();
+      render();
+    }
+
     function openAddFishForm() {
       elements.addFishForm.hidden = false;
       elements.fishNameInput.value = "";
@@ -1103,6 +1120,7 @@
       renderHistory();
     }
 
+    elements.zeroBtn.addEventListener("click", zeroRations);
     elements.resetBtn.addEventListener("click", resetRations);
     elements.saveBtn.addEventListener("click", saveMeal);
     elements.clearHistory.addEventListener("click", clearHistory);
