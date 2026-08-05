@@ -429,8 +429,8 @@
     .history-item {
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 12px;
-      align-items: center;
+      gap: 8px 12px;
+      align-items: start;
       padding: 10px 0;
       border-top: 1px solid var(--line);
     }
@@ -467,6 +467,49 @@
       color: #061014;
       background: var(--green);
       font-weight: 900;
+    }
+
+    .history-details {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 2px 0 1px;
+      scrollbar-width: none;
+    }
+
+    .history-details::-webkit-scrollbar {
+      display: none;
+    }
+
+    .history-chip {
+      display: inline-grid;
+      grid-template-columns: auto auto;
+      gap: 6px;
+      align-items: center;
+      flex: 0 0 auto;
+      min-height: 28px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.035);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .history-chip.zero {
+      color: var(--muted);
+      opacity: 0.72;
+    }
+
+    .history-chip strong {
+      color: var(--cyan);
+      font-size: 0.9rem;
+    }
+
+    .history-chip.zero strong {
+      color: var(--muted);
     }
 
     .bottom-bar {
@@ -1019,8 +1062,36 @@
         total.textContent = item.total;
         total.setAttribute("aria-label", `${item.total} raciones`);
 
+        const details = document.createElement("div");
+        details.className = "history-details";
+        const detailItems = Array.isArray(item.items)
+          ? item.items.map((fish) => normalizeFish(fish, 0)).filter(Boolean)
+          : [];
+
+        if (detailItems.length === 0) {
+          const emptyDetail = document.createElement("span");
+          emptyDetail.className = "history-chip zero";
+          emptyDetail.textContent = "Sin detalle";
+          details.appendChild(emptyDetail);
+        } else {
+          detailItems.forEach((fish) => {
+            const chip = document.createElement("span");
+            chip.className = `history-chip${fish.amount === 0 ? " zero" : ""}`;
+            chip.setAttribute("aria-label", `${fish.name}: ${fish.amount} raciones`);
+
+            const chipName = document.createElement("span");
+            chipName.textContent = fish.name;
+
+            const chipAmount = document.createElement("strong");
+            chipAmount.textContent = String(fish.amount);
+
+            chip.append(chipName, chipAmount);
+            details.appendChild(chip);
+          });
+        }
+
         main.append(food, date);
-        entry.append(main, total);
+        entry.append(main, total, details);
         elements.historyList.appendChild(entry);
       });
     }
