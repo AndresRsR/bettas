@@ -469,6 +469,18 @@
       font-weight: 900;
     }
 
+    .history-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .history-delete {
+      min-width: 36px;
+      min-height: 36px;
+      color: var(--coral);
+    }
+
     .history-details {
       grid-column: 1 / -1;
       display: flex;
@@ -579,6 +591,11 @@
 
     .primary-action.saved {
       filter: saturate(1.2) brightness(1.07);
+    }
+
+    .primary-action:disabled {
+      cursor: default;
+      opacity: 0.78;
     }
 
     .zero-btn {
@@ -858,6 +875,7 @@
     let state = loadState();
     let selectedFood = readStorage(FOOD_KEY) || foods[0];
     let history = loadHistory();
+    let saveLocked = false;
 
     if (!foods.includes(selectedFood)) {
       selectedFood = foods[0];
@@ -1042,7 +1060,7 @@
         return;
       }
 
-      history.forEach((item) => {
+      history.forEach((item, index) => {
         const entry = document.createElement("article");
         entry.className = "history-item";
 
@@ -1061,6 +1079,26 @@
         total.className = "history-total";
         total.textContent = item.total;
         total.setAttribute("aria-label", `${item.total} raciones`);
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "icon-btn history-delete";
+        deleteButton.type = "button";
+        deleteButton.title = "Borrar este registro";
+        deleteButton.setAttribute("aria-label", `Borrar registro de ${item.food}`);
+        deleteButton.innerHTML = `
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 6h18"></path>
+            <path d="M8 6V4h8v2"></path>
+            <path d="M19 6l-1 14H6L5 6"></path>
+            <path d="M10 11v5"></path>
+            <path d="M14 11v5"></path>
+          </svg>
+        `;
+        deleteButton.addEventListener("click", () => deleteHistoryEntry(index));
+
+        const actions = document.createElement("div");
+        actions.className = "history-actions";
+        actions.append(total, deleteButton);
 
         const details = document.createElement("div");
         details.className = "history-details";
@@ -1091,7 +1129,7 @@
         }
 
         main.append(food, date);
-        entry.append(main, total, details);
+        entry.append(main, actions, details);
         elements.historyList.appendChild(entry);
       });
     }
@@ -1158,9 +1196,14 @@
     }
 
     function saveMeal() {
+      if (saveLocked) return;
+      saveLocked = true;
+      elements.saveBtn.disabled = true;
+
       const now = new Date();
       history = [
         {
+          id: `${now.getTime()}-${Math.random().toString(36).slice(2)}`,
           food: selectedFood,
           total: totalRations(),
           dateText: formatDate(now),
@@ -1175,7 +1218,15 @@
       window.setTimeout(() => {
         elements.saveBtn.classList.remove("saved");
         elements.saveBtn.querySelector("span").textContent = "Guardar";
+        elements.saveBtn.disabled = false;
+        saveLocked = false;
       }, 1200);
+      renderHistory();
+    }
+
+    function deleteHistoryEntry(index) {
+      history = history.filter((_, itemIndex) => itemIndex !== index);
+      writeStorage(HISTORY_KEY, JSON.stringify(history));
       renderHistory();
     }
 
