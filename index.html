@@ -210,6 +210,122 @@
       font-weight: 900;
     }
 
+    .shrimp-card {
+      padding: 13px 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.018);
+    }
+
+    .shrimp-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .shrimp-title {
+      margin: 0;
+      font-size: 0.92rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .shrimp-cadence {
+      flex: 0 0 auto;
+      min-height: 30px;
+      padding: 6px 10px;
+      border: 1px solid rgba(118, 228, 255, 0.24);
+      border-radius: 999px;
+      color: var(--cyan);
+      background: rgba(55, 185, 255, 0.08);
+      font-size: 0.76rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .shrimp-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .shrimp-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .shrimp-name {
+      display: block;
+      font-weight: 900;
+    }
+
+    .shrimp-detail,
+    .shrimp-next {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .shrimp-next {
+      color: rgba(244, 247, 248, 0.78);
+    }
+
+    .shrimp-controls {
+      display: grid;
+      gap: 7px;
+      justify-items: end;
+    }
+
+    .shrimp-status {
+      display: inline-grid;
+      place-items: center;
+      min-height: 28px;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-size: 0.73rem;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    .shrimp-row.due .shrimp-status {
+      color: #061014;
+      background: var(--green);
+    }
+
+    .shrimp-row.rest .shrimp-status {
+      color: var(--gold);
+      background: rgba(255, 196, 91, 0.12);
+    }
+
+    .shrimp-row.fed .shrimp-status {
+      color: var(--cyan);
+      background: rgba(118, 228, 255, 0.13);
+    }
+
+    .shrimp-action {
+      min-height: 34px;
+      padding: 0 10px;
+      color: var(--text);
+    }
+
+    .shrimp-row.due .shrimp-action {
+      border-color: transparent;
+      color: #061014;
+      background: linear-gradient(135deg, var(--cyan), var(--gold));
+      font-weight: 900;
+    }
+
+    .shrimp-action.undo {
+      color: var(--coral);
+    }
+
     .table {
       width: 100%;
     }
@@ -672,6 +788,17 @@
         justify-content: flex-end;
       }
 
+      .shrimp-row {
+        grid-template-columns: 1fr;
+      }
+
+      .shrimp-controls {
+        display: flex;
+        justify-content: space-between;
+        justify-items: stretch;
+        width: 100%;
+      }
+
       .fish-name {
         font-size: 1.08rem;
       }
@@ -756,6 +883,37 @@
         </div>
       </section>
 
+      <section class="shrimp-card" aria-labelledby="shrimpTitle">
+        <div class="shrimp-head">
+          <h2 class="shrimp-title" id="shrimpTitle">Gambas y camarones</h2>
+          <span class="shrimp-cadence">Dia si / dia no</span>
+        </div>
+        <div class="shrimp-list" id="shrimpList">
+          <article class="shrimp-row due">
+            <div>
+              <span class="shrimp-name">Neocaridinas</span>
+              <span class="shrimp-detail">Sin registro</span>
+              <span class="shrimp-next">Marca cuando alimentes</span>
+            </div>
+            <div class="shrimp-controls">
+              <span class="shrimp-status">Toca hoy</span>
+              <button class="tiny-btn shrimp-action" type="button">Marcar</button>
+            </div>
+          </article>
+          <article class="shrimp-row due">
+            <div>
+              <span class="shrimp-name">Camarones fantasma</span>
+              <span class="shrimp-detail">Sin registro</span>
+              <span class="shrimp-next">Marca cuando alimentes</span>
+            </div>
+            <div class="shrimp-controls">
+              <span class="shrimp-status">Toca hoy</span>
+              <button class="tiny-btn shrimp-action" type="button">Marcar</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
       <section class="table" aria-label="Raciones por pez">
         <div class="table-tools">
           <span class="table-tools-title">Lista de peces</span>
@@ -833,6 +991,8 @@
     const STORAGE_KEY = "betta-feeding-state-v1";
     const HISTORY_KEY = "betta-feeding-history-v1";
     const FOOD_KEY = "betta-feeding-food-v1";
+    const SHRIMP_KEY = "shrimp-feeding-state-v1";
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
     const defaultFish = [
       { name: "Sky", amount: 2 },
@@ -850,6 +1010,10 @@
     ];
 
     const foods = ["Pellets", "Gambas", "Larva", "Higado", "Ayuno"];
+    const shrimpGroups = [
+      { id: "neocaridinas", name: "Neocaridinas" },
+      { id: "fantasma", name: "Camarones fantasma" }
+    ];
     const maxAmount = 12;
     const memoryStorage = {};
 
@@ -861,6 +1025,7 @@
       summaryFood: document.querySelector("#summaryFood"),
       bottomTotal: document.querySelector("#bottomTotal"),
       foodChoices: document.querySelector("#foodChoices"),
+      shrimpList: document.querySelector("#shrimpList"),
       historyList: document.querySelector("#historyList"),
       zeroBtn: document.querySelector("#zeroBtn"),
       resetBtn: document.querySelector("#resetBtn"),
@@ -875,6 +1040,7 @@
     let state = loadState();
     let selectedFood = readStorage(FOOD_KEY) || foods[0];
     let history = loadHistory();
+    let shrimpState = loadShrimpState();
     let saveLocked = false;
 
     if (!foods.includes(selectedFood)) {
@@ -944,6 +1110,24 @@
       }
     }
 
+    function loadShrimpState() {
+      let saved = {};
+      try {
+        saved = JSON.parse(readStorage(SHRIMP_KEY)) || {};
+      } catch {
+        saved = {};
+      }
+
+      return shrimpGroups.reduce((result, group) => {
+        const item = saved[group.id] || {};
+        result[group.id] = {
+          lastFedDate: normalizeDateKey(item.lastFedDate),
+          previousDate: normalizeDateKey(item.previousDate)
+        };
+        return result;
+      }, {});
+    }
+
     function normalizeFish(item, fallbackAmount) {
       const name = String(item && item.name ? item.name : "").trim().replace(/\s+/g, " ");
       const amount = Number(item && item.amount);
@@ -967,8 +1151,77 @@
       writeStorage(FOOD_KEY, selectedFood);
     }
 
+    function saveShrimpState() {
+      writeStorage(SHRIMP_KEY, JSON.stringify(shrimpState));
+    }
+
     function totalRations() {
       return state.reduce((total, fish) => total + fish.amount, 0);
+    }
+
+    function toDateKey(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function normalizeDateKey(value) {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
+      if (!match) return null;
+
+      const year = Number(match[1]);
+      const month = Number(match[2]);
+      const day = Number(match[3]);
+      const date = new Date(year, month - 1, day);
+      if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+        return null;
+      }
+
+      return `${match[1]}-${match[2]}-${match[3]}`;
+    }
+
+    function dateKeyToParts(key) {
+      const normalized = normalizeDateKey(key);
+      if (!normalized) return null;
+      const [year, month, day] = normalized.split("-").map(Number);
+      return { year, month, day };
+    }
+
+    function dateKeyOrdinal(key) {
+      const parts = dateKeyToParts(key);
+      return parts ? Math.floor(Date.UTC(parts.year, parts.month - 1, parts.day) / MS_PER_DAY) : null;
+    }
+
+    function daysBetweenDateKeys(fromKey, toKey) {
+      const from = dateKeyOrdinal(fromKey);
+      const to = dateKeyOrdinal(toKey);
+      return from === null || to === null ? null : to - from;
+    }
+
+    function addDaysToDateKey(key, days) {
+      const parts = dateKeyToParts(key);
+      if (!parts) return null;
+      const date = new Date(parts.year, parts.month - 1, parts.day + days);
+      return toDateKey(date);
+    }
+
+    function formatShortDateKey(key) {
+      const normalized = normalizeDateKey(key);
+      if (!normalized) return "Sin registro";
+
+      const today = toDateKey(new Date());
+      const days = daysBetweenDateKeys(normalized, today);
+      if (days === 0) return "Hoy";
+      if (days === 1) return "Ayer";
+      if (days === -1) return "Manana";
+
+      const parts = dateKeyToParts(normalized);
+      return new Intl.DateTimeFormat("es", {
+        weekday: "short",
+        day: "numeric",
+        month: "short"
+      }).format(new Date(parts.year, parts.month - 1, parts.day));
     }
 
     function formatDate(date) {
@@ -1048,6 +1301,115 @@
       elements.summaryTotal.textContent = String(total);
       elements.summaryFood.textContent = selectedFood;
       elements.bottomTotal.textContent = `${total} ${total === 1 ? "racion" : "raciones"}`;
+    }
+
+    function getShrimpScheduleInfo(groupId) {
+      const today = toDateKey(new Date());
+      const lastFedDate = shrimpState[groupId] && shrimpState[groupId].lastFedDate;
+
+      if (!lastFedDate) {
+        return {
+          status: "Toca hoy",
+          statusClass: "due",
+          detail: "Sin registro",
+          next: "Marca cuando alimentes",
+          action: "mark",
+          actionLabel: "Marcar"
+        };
+      }
+
+      const days = daysBetweenDateKeys(lastFedDate, today);
+      const nextDate = addDaysToDateKey(lastFedDate, 2);
+
+      if (days === 0) {
+        return {
+          status: "Hecho",
+          statusClass: "fed",
+          detail: "Ultima: Hoy",
+          next: `Proxima: ${formatShortDateKey(nextDate)}`,
+          action: "undo",
+          actionLabel: "Deshacer"
+        };
+      }
+
+      if (days === 1) {
+        return {
+          status: "Descanso",
+          statusClass: "rest",
+          detail: "Ultima: Ayer",
+          next: `Toca: ${formatShortDateKey(nextDate)}`,
+          action: "mark",
+          actionLabel: "Marcar"
+        };
+      }
+
+      if (days !== null && days > 1) {
+        return {
+          status: "Toca hoy",
+          statusClass: "due",
+          detail: `Ultima: ${formatShortDateKey(lastFedDate)}`,
+          next: `Pasaron ${days} dias`,
+          action: "mark",
+          actionLabel: "Marcar"
+        };
+      }
+
+      return {
+        status: "Revisar",
+        statusClass: "rest",
+        detail: `Ultima: ${formatShortDateKey(lastFedDate)}`,
+        next: "Fecha futura guardada",
+        action: "mark",
+        actionLabel: "Marcar"
+      };
+    }
+
+    function renderShrimpSchedule() {
+      elements.shrimpList.innerHTML = "";
+
+      shrimpGroups.forEach((group) => {
+        const info = getShrimpScheduleInfo(group.id);
+        const row = document.createElement("article");
+        row.className = `shrimp-row ${info.statusClass}`;
+
+        const text = document.createElement("div");
+
+        const name = document.createElement("span");
+        name.className = "shrimp-name";
+        name.textContent = group.name;
+
+        const detail = document.createElement("span");
+        detail.className = "shrimp-detail";
+        detail.textContent = info.detail;
+
+        const next = document.createElement("span");
+        next.className = "shrimp-next";
+        next.textContent = info.next;
+
+        const controls = document.createElement("div");
+        controls.className = "shrimp-controls";
+
+        const status = document.createElement("span");
+        status.className = "shrimp-status";
+        status.textContent = info.status;
+
+        const action = document.createElement("button");
+        action.className = `tiny-btn shrimp-action${info.action === "undo" ? " undo" : ""}`;
+        action.type = "button";
+        action.textContent = info.actionLabel;
+        action.addEventListener("click", () => {
+          if (info.action === "undo") {
+            undoShrimpFed(group.id);
+          } else {
+            markShrimpFed(group.id);
+          }
+        });
+
+        text.append(name, detail, next);
+        controls.append(status, action);
+        row.append(text, controls);
+        elements.shrimpList.appendChild(row);
+      });
     }
 
     function renderHistory() {
@@ -1164,6 +1526,34 @@
       render();
     }
 
+    function markShrimpFed(groupId) {
+      const today = toDateKey(new Date());
+      const current = shrimpState[groupId] || { lastFedDate: null, previousDate: null };
+
+      if (current.lastFedDate === today) return;
+
+      shrimpState[groupId] = {
+        lastFedDate: today,
+        previousDate: current.lastFedDate || null
+      };
+      saveShrimpState();
+      renderShrimpSchedule();
+    }
+
+    function undoShrimpFed(groupId) {
+      const today = toDateKey(new Date());
+      const current = shrimpState[groupId] || { lastFedDate: null, previousDate: null };
+
+      if (current.lastFedDate !== today) return;
+
+      shrimpState[groupId] = {
+        lastFedDate: current.previousDate || null,
+        previousDate: null
+      };
+      saveShrimpState();
+      renderShrimpSchedule();
+    }
+
     function openAddFishForm() {
       elements.addFishForm.hidden = false;
       elements.fishNameInput.value = "";
@@ -1239,6 +1629,7 @@
     function render() {
       renderHeader();
       renderFoodChoices();
+      renderShrimpSchedule();
       renderRows();
       renderSummary();
       renderHistory();
