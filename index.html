@@ -332,6 +332,7 @@
 
     .table-tools {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
@@ -360,6 +361,93 @@
     .add-fish-btn .icon {
       width: 16px;
       height: 16px;
+    }
+
+    .fish-list-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .fish-list-actions .tiny-btn {
+      min-height: 44px;
+    }
+
+    .fish-list-actions [aria-pressed="true"] {
+      color: var(--cyan);
+      border-color: var(--cyan);
+    }
+
+    .fish-list-actions :disabled {
+      opacity: 0.4;
+    }
+
+    .fish-name-label {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .fish-edit-btn {
+      flex: 0 0 40px;
+      width: 40px;
+      height: 44px;
+      margin-left: 4px;
+      padding: 0;
+      border: 0;
+      color: var(--cyan);
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .fish-empty {
+      margin: 0;
+      padding: 20px 12px;
+      color: var(--muted);
+    }
+
+    .fish-dialog {
+      width: min(400px, calc(100% - 28px));
+      max-height: calc(100% - 32px);
+      padding: 20px;
+      overflow-y: auto;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      color: var(--text);
+      background: var(--panel);
+    }
+
+    .fish-dialog::backdrop {
+      background: rgba(0, 0, 0, 0.75);
+    }
+
+    .fish-dialog h2 {
+      margin: 0 0 20px;
+      font-size: 1.15rem;
+    }
+
+    .fish-dialog .form-actions {
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      margin-top: 16px;
+    }
+
+    .fish-dialog button {
+      min-height: 44px;
+    }
+
+    .fish-dialog .form-submit {
+      color: #061014;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--cyan), var(--gold));
+    }
+
+    .fish-dialog .fish-retire {
+      width: 100%;
+      margin-top: 20px;
+      padding: 8px 12px;
+      overflow-wrap: anywhere;
+      border-color: rgba(255, 119, 104, 0.4);
+      color: var(--coral);
     }
 
     .add-fish-form {
@@ -788,6 +876,11 @@
         justify-content: flex-end;
       }
 
+      .fish-dialog .form-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
       .shrimp-row {
         grid-template-columns: 1fr;
       }
@@ -917,13 +1010,16 @@
       <section class="table" aria-label="Raciones por pez">
         <div class="table-tools">
           <span class="table-tools-title">Lista de peces</span>
-          <button class="tiny-btn add-fish-btn" type="button" id="openAddFish">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 5v14"></path>
-              <path d="M5 12h14"></path>
-            </svg>
-            <span>Pez</span>
-          </button>
+          <div class="fish-list-actions">
+            <button class="tiny-btn" type="button" id="editFishList" aria-pressed="false" aria-controls="fishRows">Editar</button>
+            <button class="tiny-btn add-fish-btn" type="button" id="openAddFish">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5v14"></path>
+                <path d="M5 12h14"></path>
+              </svg>
+              <span>Pez</span>
+            </button>
+          </div>
         </div>
         <form class="add-fish-form" id="addFishForm" hidden>
           <label class="sr-only" for="fishNameInput">Nombre del pez</label>
@@ -962,6 +1058,19 @@
       </section>
     </section>
   </main>
+
+  <dialog class="fish-dialog" id="editFishDialog" aria-labelledby="editFishTitle">
+    <form id="editFishForm">
+      <h2 id="editFishTitle">Editar pez</h2>
+      <label class="field-label" for="editFishName">Nombre del pez</label>
+      <input class="fish-input" id="editFishName" name="fishName" type="text" autocomplete="off" maxlength="24" required>
+      <div class="form-actions">
+        <button class="tiny-btn" type="button" id="cancelEditFish">Cancelar</button>
+        <button class="tiny-btn form-submit" type="submit">Guardar cambios</button>
+      </div>
+      <button class="tiny-btn fish-retire" type="button" id="retireFish">Retirar pez</button>
+    </form>
+  </dialog>
 
   <nav class="bottom-bar" aria-label="Acciones">
     <div class="bottom-inner">
@@ -1034,7 +1143,13 @@
       openAddFish: document.querySelector("#openAddFish"),
       addFishForm: document.querySelector("#addFishForm"),
       fishNameInput: document.querySelector("#fishNameInput"),
-      cancelAddFish: document.querySelector("#cancelAddFish")
+      cancelAddFish: document.querySelector("#cancelAddFish"),
+      editFishList: document.querySelector("#editFishList"),
+      editFishDialog: document.querySelector("#editFishDialog"),
+      editFishForm: document.querySelector("#editFishForm"),
+      editFishName: document.querySelector("#editFishName"),
+      cancelEditFish: document.querySelector("#cancelEditFish"),
+      retireFish: document.querySelector("#retireFish")
     };
 
     let state = loadState();
@@ -1042,6 +1157,8 @@
     let history = loadHistory();
     let shrimpState = loadShrimpState();
     let saveLocked = false;
+    let editingFishList = false;
+    let editingFishIndex = null;
 
     if (!foods.includes(selectedFood)) {
       selectedFood = foods[0];
@@ -1077,21 +1194,20 @@
       try {
         const saved = JSON.parse(readStorage(STORAGE_KEY));
         if (!Array.isArray(saved)) return cloneDefaults();
-        const result = defaultFish.map((fish) => {
-          const existing = saved.find((item) => item && item.name === fish.name);
-          const amount = Number(existing && existing.amount);
-          return {
-            name: fish.name,
-            amount: Number.isFinite(amount) ? clampAmount(amount) : fish.amount
-          };
-        });
-        const knownNames = new Set(result.map((fish) => fish.name.toLowerCase()));
+        // The saved roster is authoritative, including an intentionally empty list.
+        const result = [];
+        const knownNames = new Set();
 
         saved.forEach((item) => {
           const fish = normalizeFish(item, 0);
           if (fish && !knownNames.has(fish.name.toLowerCase())) {
             knownNames.add(fish.name.toLowerCase());
-            result.push(fish);
+            result.push({
+              ...fish,
+              baseAmount: typeof item.baseAmount === "number" && Number.isFinite(item.baseAmount)
+                ? clampAmount(item.baseAmount)
+                : defaultAmountFor(fish.name)
+            });
           }
         });
 
@@ -1139,7 +1255,7 @@
     }
 
     function cloneDefaults() {
-      return defaultFish.map((fish) => ({ ...fish }));
+      return defaultFish.map((fish) => ({ ...fish, baseAmount: fish.amount }));
     }
 
     function clampAmount(value) {
@@ -1258,13 +1374,39 @@
 
     function renderRows() {
       elements.fishRows.innerHTML = "";
+      elements.editFishList.disabled = state.length === 0;
+      elements.editFishList.setAttribute("aria-pressed", String(editingFishList));
+      elements.editFishList.textContent = editingFishList ? "Listo" : "Editar";
+
+      if (state.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "fish-empty";
+        empty.textContent = "No hay peces en la lista.";
+        elements.fishRows.appendChild(empty);
+        return;
+      }
+
       state.forEach((fish, index) => {
         const row = document.createElement("div");
         row.className = "fish-row";
 
         const name = document.createElement("div");
         name.className = "fish-name";
-        name.textContent = fish.name;
+        const label = document.createElement("span");
+        label.className = "fish-name-label";
+        label.textContent = fish.name;
+        name.appendChild(label);
+
+        if (editingFishList) {
+          const edit = document.createElement("button");
+          edit.className = "fish-edit-btn";
+          edit.type = "button";
+          edit.title = `Editar ${fish.name}`;
+          edit.setAttribute("aria-label", `Editar ${fish.name}`);
+          edit.innerHTML = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m16 3 5 5-13 13H3v-5Z"></path><path d="m13 6 5 5"></path></svg>';
+          edit.addEventListener("click", () => openEditFish(index));
+          name.appendChild(edit);
+        }
 
         const control = document.createElement("div");
         control.className = "ration-control";
@@ -1510,8 +1652,8 @@
 
     function resetRations() {
       state = state.map((fish) => ({
-        name: fish.name,
-        amount: defaultAmountFor(fish.name)
+        ...fish,
+        amount: fish.baseAmount
       }));
       saveState();
       render();
@@ -1519,7 +1661,7 @@
 
     function zeroRations() {
       state = state.map((fish) => ({
-        name: fish.name,
+        ...fish,
         amount: 0
       }));
       saveState();
@@ -1579,10 +1721,61 @@
         return;
       }
 
-      state.push(fish);
+      state.push({ ...fish, baseAmount: defaultAmountFor(fish.name) });
       saveState();
       closeAddFishForm();
       render();
+    }
+
+    function toggleEditFishList() {
+      editingFishList = !editingFishList;
+      closeAddFishForm();
+      renderRows();
+    }
+
+    function openEditFish(index) {
+      const fish = state[index];
+      if (!fish) return;
+      editingFishIndex = index;
+      elements.editFishName.value = fish.name;
+      elements.editFishName.setCustomValidity("");
+      elements.retireFish.textContent = `Retirar a ${fish.name}`;
+      elements.editFishDialog.showModal();
+      elements.editFishName.focus();
+    }
+
+    function saveFishChanges(event) {
+      event.preventDefault();
+      const fish = state[editingFishIndex];
+      if (!fish) return;
+      const name = elements.editFishName.value.trim().replace(/\s+/g, " ");
+      const exists = state.some((item, index) => (
+        index !== editingFishIndex && item.name.toLowerCase() === name.toLowerCase()
+      ));
+      if (!name || exists) {
+        elements.editFishName.setCustomValidity(name ? "Ese pez ya esta en la lista." : "Escribe un nombre.");
+        elements.editFishName.reportValidity();
+        return;
+      }
+
+      fish.name = name;
+      saveState();
+      elements.editFishDialog.close();
+      render();
+      elements.editFishList.focus();
+    }
+
+    function retireFish() {
+      const fish = state[editingFishIndex];
+      if (!fish) return;
+      if (!window.confirm(`Retirar a ${fish.name} de la lista? Sus registros anteriores se conservaran en el historial.`)) return;
+
+      state.splice(editingFishIndex, 1);
+      if (state.length === 0) editingFishList = false;
+      saveState();
+      elements.editFishDialog.close();
+      render();
+      elements.openAddFish.focus();
     }
 
     function saveMeal() {
@@ -1642,6 +1835,12 @@
     elements.openAddFish.addEventListener("click", openAddFishForm);
     elements.cancelAddFish.addEventListener("click", closeAddFishForm);
     elements.addFishForm.addEventListener("submit", addFish);
+    elements.editFishList.addEventListener("click", toggleEditFishList);
+    elements.editFishForm.addEventListener("submit", saveFishChanges);
+    elements.cancelEditFish.addEventListener("click", () => elements.editFishDialog.close());
+    elements.retireFish.addEventListener("click", retireFish);
+    elements.editFishName.addEventListener("input", () => elements.editFishName.setCustomValidity(""));
+    elements.editFishDialog.addEventListener("close", () => { editingFishIndex = null; });
 
     render();
   </script>
